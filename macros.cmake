@@ -343,7 +343,7 @@ FUNCTION( GET_SUBFOLDERS_BY_POSTFIX SUB_FOLDERS POSTFIX )
 ENDFUNCTION( GET_SUBFOLDERS_BY_POSTFIX SUB_FOLDERS POSTFIX )
 
 
-INCLUDE(list_handle)
+INCLUDE(tools/cmake/list_handle.cmake)
 # 添加所有子文件夹
 FUNCTION( ADD_SUBDIRECTORYS_BY_POSTFIX POSTFIX )
 
@@ -419,3 +419,40 @@ MACRO(SOURCE_GROUP_BY_DIR SOURCE_FILES)
 		ENDFOREACH(SGBD_FILE)
 	ENDIF(MSVC)
 ENDMACRO(SOURCE_GROUP_BY_DIR)
+
+
+# https://stackoverflow.com/questions/37434946/how-do-i-iterate-over-all-cmake-targets-programmatically
+# 递归获取目录下所有targets
+function(get_all_targets var)
+    set(targets)
+    get_all_targets_recursive(targets ${CMAKE_CURRENT_SOURCE_DIR})
+    set(${var} ${targets} PARENT_SCOPE)
+endfunction()
+
+# 递归获取目录下所有targets
+macro(get_all_targets_recursive targets dir)
+    get_property(subdirectories DIRECTORY ${dir} PROPERTY SUBDIRECTORIES)
+    foreach(subdir ${subdirectories})
+        get_all_targets_recursive(${targets} ${subdir})
+    endforeach()
+
+    get_property(current_targets DIRECTORY ${dir} PROPERTY BUILDSYSTEM_TARGETS)
+    list(APPEND ${targets} ${current_targets})
+endmacro()
+
+# 添加依赖模块，并将其内部target放入工程结构label文件夹内
+function( add_dependency module label )
+    add_subdirectory( ${module} )
+    get_all_targets( targets )
+    foreach(target ${targets})
+        get_target_property( property ${target} FOLDER )
+        if( ${property} STREQUAL "property-NOTFOUND" )
+            set( property ${label} )
+        else()
+            set( property ${label}/${property} )
+        endif()
+        set_target_properties( ${target} PROPERTIES FOLDER ${property} )
+        message( "add ${property}/${target}" )
+    endforeach()
+endfunction()
+
