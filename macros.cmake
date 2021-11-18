@@ -343,7 +343,7 @@ FUNCTION( GET_SUBFOLDERS_BY_POSTFIX SUB_FOLDERS POSTFIX )
 ENDFUNCTION( GET_SUBFOLDERS_BY_POSTFIX SUB_FOLDERS POSTFIX )
 
 
-INCLUDE(tools/cmake/list_handle.cmake)
+INCLUDE(list_handle)
 # 添加所有子文件夹
 FUNCTION( ADD_SUBDIRECTORYS_BY_POSTFIX POSTFIX )
 
@@ -425,7 +425,13 @@ ENDMACRO(SOURCE_GROUP_BY_DIR)
 # 递归获取目录下所有targets
 function(get_all_targets var)
     set(targets)
-    get_all_targets_recursive(targets ${CMAKE_CURRENT_SOURCE_DIR})
+	if(${ARGC} GREATER 1)
+	   set(get_all_targets_dir ${ARGV1})
+	else(${ARGC} GREATER 1)
+	   set(get_all_targets_dir ${CMAKE_CURRENT_SOURCE_DIR})
+	endif(${ARGC} GREATER 1)
+
+    get_all_targets_recursive(targets ${get_all_targets_dir})
     set(${var} ${targets} PARENT_SCOPE)
 endfunction()
 
@@ -433,6 +439,7 @@ endfunction()
 macro(get_all_targets_recursive targets dir)
     get_property(subdirectories DIRECTORY ${dir} PROPERTY SUBDIRECTORIES)
     foreach(subdir ${subdirectories})
+        message(${subdir})
         get_all_targets_recursive(${targets} ${subdir})
     endforeach()
 
@@ -441,15 +448,15 @@ macro(get_all_targets_recursive targets dir)
 endmacro()
 
 # 添加依赖模块，并将其内部target放入工程结构label文件夹内
-function( add_dependency module label )
-    add_subdirectory( ${module} )
-    get_all_targets( targets )
+function( add_dependency module_dir label_prefix )
+    add_subdirectory( ${module_dir} )
+    get_all_targets( targets ${module_dir} )
     foreach(target ${targets})
         get_target_property( property ${target} FOLDER )
         if( ${property} STREQUAL "property-NOTFOUND" )
-            set( property ${label} )
+            set( property ${label_prefix} )
         else()
-            set( property ${label}/${property} )
+            set( property ${label_prefix}/${property} )
         endif()
         set_target_properties( ${target} PROPERTIES FOLDER ${property} )
         message( "add ${property}/${target}" )
