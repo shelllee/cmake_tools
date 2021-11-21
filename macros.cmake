@@ -458,7 +458,7 @@ function( set_targets_group_property_prefix module_dir group_property_prefix )
             set( property ${group_property_prefix}/${property} )
         endif()
         set_target_properties( ${target} PROPERTIES FOLDER ${property} )
-        message( "add ${property}/${target}" )
+        message( "move ${target} to ${property}/${target}" )
     endforeach()
 endfunction()
 
